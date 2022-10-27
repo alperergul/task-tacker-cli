@@ -43,10 +43,14 @@ def get_all_todos() -> List[Todo]:
 
 
 def delete_todo(position):
-    c.execute("DELETE from todos WHERE position=:position",
-              {"position": position})
-    for pos in range(position+1, count):
-        change_position(pos, pos-1, False)
+    c.execute('select count(*) from todos')
+    count = c.fetchone()[0]
+
+    with conn:
+        c.execute("DELETE from todos WHERE position=:position",
+                  {"position": position})
+        for pos in range(position+1, count):
+            change_position(pos, pos-1, False)
 
 
 def change_position(old_position: int, new_position: int, commit=True):
@@ -60,11 +64,17 @@ def change_position(old_position: int, new_position: int, commit=True):
 def update_todo(position: int, task: str, category: str):
     with conn:
         if task is not None and category is not None:
-            c.execute('UPDATE todos SET task = :task, category = :category WHERE position = :position', {
-                      'position': position, 'task': task, 'category': category})
+            c.execute('UPDATE todos SET task = :task, category = :category WHERE position = :position',
+                      {'position': position, 'task': task, 'category': category})
         elif task is not None:
-            c.execute('UPDATE todos SET task = :task WHERE position = :position', {
-                      'position': position, 'task': task})
+            c.execute('UPDATE todos SET task = :task WHERE position = :position',
+                      {'position': position, 'task': task})
         elif category is not None:
-            c.execute('UPDATE TODOS SET category = :category WHERE position = :position', {
-                      'position': position, 'category': category})
+            c.execute('UPDATE todos SET category = :category WHERE position = :position',
+                      {'position': position, 'category': category})
+
+
+def complete_todo(position: int):
+    with conn:
+        c.execute('UPDATE todos SET status = 2, date_completed = :date_completed WHERE position = :position', {
+                  'position': position, 'date_completed': datetime.datetime.now().isoformat()})
